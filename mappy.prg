@@ -1,37 +1,94 @@
 PROGRAM example_load_sound;
 
+GLOBAL
+
+id_intro;
+credits =0 ;
+credit_sound;
+
 PRIVATE
     id_sound;
 
 BEGIN
     set_mode(224288);
     set_fps(60,2);
-    //clear_screen
-    //define_region(1,0,0,224,288);
-    //region = 1;
-    //set_mode(m244x288);
     load_fpg("mappy.fpg");
-    write_int(0,0,0,0,offset timer[0]);
+    id_sound=load_sound("intro.ogg",0);
+    credit_sound=load_sound("credit.ogg",0);
 
-    //graph=4;
-    //x=112;
-    //y=144;
+    write_int(0,0,0,0,offset credits);
+
     high_score();
     one_up();
-    intro();
 
     loop
-    frame;
+
+
+    id_intro = intro();
+
+    // check for coinage
+    credit();
+
+    //??? do something here
+        while (credits == 0)
+            frame;
+        end
+        signal(id_intro,s_kill_tree);
+
+        pselect();
+        loop
+            frame;
+        end
+
     end
-
- end
-function delay(x)
-
-begin
 
 
 end
 
+process pselect();
+
+begin
+
+graph = 9;
+x = 340;
+y = 148;
+
+
+    loop
+        if (x > 114)
+            x-=4;
+        end
+
+        frame;
+
+    end
+
+end
+
+
+
+process credit()
+
+begin
+
+    loop
+
+        if(key(_space))
+            sound(credit_sound, 100, 256);
+
+            credits++;
+            //frame;
+
+            while(key(_space))
+                frame;
+            end
+
+        end
+
+        frame;
+    end
+
+end
 
 process intro()
 
@@ -46,7 +103,7 @@ mlid;
 begin
 
 
-    put_screen(file,6);
+    //  put_screen(file,6);
 
     frame(1000);
 
@@ -94,13 +151,14 @@ begin
     end
 
 
-    cpid=copyright();
 
     y = timer[9]+100;
 
     while(timer[9]<y);
         frame;
     end
+
+    mappyi();
 
     while (mlid.y < 144)
         mlid.y+=4;
@@ -114,6 +172,21 @@ begin
 
 end
 
+process mappyi()
+
+begin
+
+    graph=8;
+    x=114;
+    y=105;
+
+    loop
+
+        frame;
+
+    end
+
+end
 
 process start()
 private
@@ -188,8 +261,9 @@ x=113;
 y=88;
 
 
-flags=4;
+//flags=4;
 
+z=-10;
 
 loop
     frame;
