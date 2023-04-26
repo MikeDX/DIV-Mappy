@@ -3,44 +3,70 @@ PROGRAM example_load_sound;
 GLOBAL
 
 id_intro;
-credits =0 ;
+credits = 0 ;
 credit_sound;
+id_sound;
+playing = false;
 
 PRIVATE
-    id_sound;
+
+
 
 BEGIN
-    set_mode(224288);
     set_fps(60,2);
     load_fpg("mappy.fpg");
+
+    set_mode(224288);
+    define_region(1,0,32,224,256);
+    start_scroll(0,file,300,301,1,15);
+    //scroll[0].y1 = -64;
     id_sound=load_sound("intro.ogg",0);
     credit_sound=load_sound("credit.ogg",0);
 
     write_int(0,0,0,0,offset credits);
 
-    high_score();
-    one_up();
-
     loop
+        high_score();
+        one_up();
 
 
-    id_intro = intro();
 
-    // check for coinage
-    credit();
+        id_intro = intro();
 
-    //??? do something here
+        // check for coinage
+        credit();
+
+        //??? do something here
+
         while (credits == 0)
             frame;
         end
+
         signal(id_intro,s_kill_tree);
 
         pselect();
-        loop
+
+        while(!playing)
             frame;
         end
 
+
+        //playing = false;
+
+        while(playing)
+            frame;
+        end
+
+    //    loop
+      //      frame;
+        //end
+        frame;
+
+        let_me_alone();
+
+
     end
+
 
 
 end
@@ -54,16 +80,22 @@ x = 340;
 y = 148;
 
 
-    loop
+    while(!key(_1) and !key(_2))
         if (x > 114)
             x-=4;
         end
-
+        scroll.y0++;
+        scroll.x1++;
         frame;
 
     end
 
+    playing = true;
+    credits = 0;
+    start();
+
 end
+
 
 
 
@@ -103,7 +135,7 @@ mlid;
 begin
 
 
-    //  put_screen(file,6);
+    //put_screen(file,6);
 
     frame(1000);
 
@@ -189,21 +221,21 @@ begin
 end
 
 process start()
-private
-id_sound;
+
 
 begin
-    LOOP
-        if(!is_playing_sound(id_sound))
-        IF (scan_code==_space)
-            sound(id_sound, 100, 256);
-            mappy(209,248);
-            //x = 200;
-            //y = 250;
-        END
-        else
-        end
+graph = 53;
+x = 111;
+y = 264;
 
+    sound(id_sound, 100, 256);
+    mappy(209,248);
+    goro(174,248);
+    meowky(121,248);
+    meowky(97,248);
+    meowky(73,248);
+
+    loop
         FRAME;
     END
 END
@@ -299,6 +331,37 @@ end
 end
 
 
+process goro(x,y)
+
+begin
+
+graph = 120;
+flags=4;
+loop
+
+x--;
+
+frame;
+
+end
+
+end
+
+process meowky(x,y)
+
+begin
+
+graph = 130;
+flags=4;
+loop
+x--;
+frame;
+
+end
+
+end
+
+
 
 
 
@@ -306,8 +369,9 @@ process mappy(x,y)
 
 begin
 
-region=1;
+//scroll.camera = id;
 graph=100;
+region=1;
 loop
         x--;
         if(x mod 4 == 0)
