@@ -22,6 +22,11 @@ GLOBAL
 level;
 miss_sound;
 jump_sound;
+intro_sound;
+start_sound;
+ingame_sound;
+credit_sound;
+
 scroll_map;
 LOCAL
 
@@ -43,6 +48,9 @@ level = 1;
 
 miss_sound = load_sound("miss.ogg",0);
 jump_sound = load_sound("tramp_jump.ogg",0);
+intro_sound = load_sound("intro.ogg",0);
+start_sound = load_sound("game_start.ogg",0);
+ingame_sound = load_sound("ingame.ogg",1);
 
 //set_mode(m320x240);
 define_region(1,0,16,224,256);
@@ -176,15 +184,13 @@ state = m_intro;
 dir = -1;
 intro = 1;
 
-
-
-
 //frame;
 
 //scroll.camera = id;
 //loop
 //frame;
 //end
+
 
 
 
@@ -230,6 +236,8 @@ loop
 
             // wait a second
             frame(6000);
+            sound(start_sound,128,256);
+
             state = m_walking;
 
         end
@@ -281,9 +289,14 @@ loop
             start_scroll(0,file,0,scroll_map,1,0);
             scroll.camera = id;
 
+            frame(3000);
+            flags = 0;
+            frame(6000);
 
             state = m_none;
             intro = 0;
+
+            sound(ingame_sound,128,256);
 
             //loop
             //    frame;
@@ -293,6 +306,7 @@ loop
 
 
         case m_knocked:
+            stop_sound(-1);
             textid = write(0,0,20,3,"State: Knocked");
 
             graph = 104;
