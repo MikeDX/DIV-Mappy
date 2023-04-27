@@ -13,10 +13,22 @@ m_bounce = 3;
 m_jump = 4;
 m_hop = 5;
 m_air = 6;
+m_knocked = 7;
+m_intro = 8;
+m_what = 9;
 
 GLOBAL
 
 level;
+miss_sound;
+jump_sound;
+scroll_map;
+LOCAL
+
+// for trampolines
+hit = 0;
+broken = 0;
+health;
 
 BEGIN
 
@@ -24,12 +36,20 @@ BEGIN
 load_fpg("mappy.fpg");
 set_mode(224288);
 set_fps(60,0);
+frame(6000);
+//fade_on();
 
 level = 1;
 
+miss_sound = load_sound("miss.ogg",0);
+jump_sound = load_sound("tramp_jump.ogg",0);
+
 //set_mode(m320x240);
 define_region(1,0,16,224,256);
-start_scroll(0,file,0,300+level,1,0);
+scroll_map = new_map(480,256,240,128,0);
+map_put(file,scroll_map,300+level,240,128);
+start_scroll(0,file,0,scroll_map,1,0);
+start_scroll(1,file,0,350,1,0);
 
 /*
 define_region(2,0,120,320,60);
@@ -39,7 +59,7 @@ define_region(3,0,180,320,60);
 start_scroll(2,file,300,301,3,0);
 */
 //graph=100;
-scroll.camera = mappy();
+mappy();
 sprite(120,160,100);
 
 trampolines();
@@ -57,25 +77,74 @@ px;
 py;
 
 
+
 begin
 
     for (x=1;x<10;x++)
         get_point(file,300+level,x, &px,&py);
         if (px < 65000 && px > 0 && py > 60)
-            trampoline(px+14,py+2);
+            trampoline(px+14,py+5);
         end
     end
 end
 
 process trampoline(x,y)
 
+
 begin
+hit = false;
+broken = false;
 
 ctype=c_scroll;
-
+//cnumber=1;
 graph = 500;
-
+health = 3;
 loop
+
+if (hit == true)
+    sound(jump_sound,128,256);
+
+    if(health > 0)
+    graph=501 + (3-health)*4;
+    frame;
+    graph++;
+    frame;
+    graph++;
+    frame;
+    graph--;
+    frame;
+    graph--;
+    frame;
+    graph--;
+    frame;
+    flags=2;
+    graph++;
+    frame;
+    graph++;
+    frame;
+    graph--;
+    frame;
+    graph--;
+    frame;
+    flags=0;
+    end
+
+    hit=0;
+    if(health > 0)
+        health--;
+        graph = 500 + (3-health)*4;
+    else
+        graph = 516;
+    end
+end
+
+if (hit == 2)
+    health = 3;
+    graph = 500;
+    hit = 0;
+end
+
+
 frame;
 end
 
@@ -89,17 +158,35 @@ private
 state;
 dir;
 i;
+j;
 textid;
-
 animcount = 0;
+tramp_id;
+bounced_id;
+intro;
 begin
 graph=100;
 ctype=c_scroll;
+cnumber=0;
 region=0;
-x=100;
-y=100;
-state = m_none;
-dir = 0;
+x=464;
+y=232;
+scroll.x0 = 480;
+state = m_intro;
+dir = -1;
+intro = 1;
+
+
+
+
+//frame;
+
+//scroll.camera = id;
+//loop
+//frame;
+//end
+
+
 
 loop
 
@@ -123,9 +210,121 @@ loop
             state = m_walking;
         end
 
+        if(bounced_id)
+            bounced_id.hit = 2;
+            bounced_id = 0;
+        end
+
     end
 
     switch (state)
+
+
+        case m_intro:
+            textid = write(0,0,20,3,"State: Intro");
+
+            // draw black wall
+            map_put(file,scroll_map,350,452,228);
+            refresh_scroll(0);
+            scroll.x0 = 480;
+
+            // wait a second
+            frame(6000);
+            state = m_walking;
+
+        end
+
+        case m_what:
+            textid = write(0,0,20,3,"State: What?");
+
+            map_put(file,scroll_map,351,452,228);
+            refresh_scroll(0);
+            graph=100;
+            frame;
+            graph=101;
+
+            while(scroll.x0 > 234)
+                scroll.x0--;
+                frame;
+            end
+
+            //frame(6000);
+            flags = 1;
+
+            frame(3000);
+
+            bounced_id.hit = 1;
+            frame(2000);
+            bounced_id.hit = 2;
+
+            /*
+            while(x>418);
+                x-=2;
+                frame;
+
+            end
+            */
+
+
+//loop
+//frame;
+//end
+
+
+            unload_map(scroll_map);
+
+            stop_scroll(0);
+//frame;
+
+            scroll_map = new_map(458,256,240,128,0);
+            map_put(file,scroll_map,300+level,240,128);
+            start_scroll(0,file,0,scroll_map,1,0);
+            scroll.camera = id;
+
+
+            state = m_none;
+            intro = 0;
+
+            //loop
+            //    frame;
+            //end
+
+        end
+
+
+        case m_knocked:
+            textid = write(0,0,20,3,"State: Knocked");
+
+            graph = 104;
+            flags = 0;
+            //debug;
+            frame(6000);
+            sound(miss_sound,128,256);
+            for(i=0;i<4;i++)
+                angle = 0;
+                for(j=0;j<4;j++)
+                    graph = 106;
+                    frame(200);
+                    graph = 107;
+                    frame(200);
+                    angle -=90000;
+                end
+            end
+
+            for(i=0;i<8;i++)
+                graph = 108;
+                frame(200);
+                graph = 109;
+                frame(200);
+            end
+
+            frame(6000);
+            loop
+                frame;
+            end
+
+        end
+
 
         case m_air:
             textid = write(0,0,20,3,"State: Airtime");
@@ -137,7 +336,7 @@ loop
             frame;
             y++;
             frame;
-            state = m_none;
+            state = m_falling;
         end
 
         case m_none:
@@ -153,7 +352,7 @@ loop
             textid = write(0,0,20,3,"State: Bouncing");
 
             if(map_get_pixel(file,400+level,x,y+10) == 38)
-                if (key(_left))
+                if (key(_left) or intro)
                     dir = -1;
                     state = m_hop;
                     flags = 0;
@@ -167,9 +366,9 @@ loop
 
                 if (state == m_hop)
 
-                    graph = 100;
+                    graph = 105;
 
-                    while(map_get_pixel(file,400+level,x,y+10)==30)
+                    while(map_get_pixel(file,400+level,x,y+6)==30)
                         y-=2;
                         frame;
                     end
@@ -194,8 +393,9 @@ loop
             end
 
             if (state != m_hop)
-                if(y>66)
-                    y-=2;
+                y-=2;
+                if(!collision(type trampoline) && map_get_pixel(file,400+level,x,y-12) != 235)
+                //    y-=2;
                     if(animcount == 0)
                         if (graph == 102)
                             graph = 103;
@@ -219,6 +419,10 @@ loop
             // nothing we can do except land on a trampoline
             if(map_get_pixel(file,400+level,x,y+10) ==251)
                 state = m_none;
+                if(intro)
+                    state = m_what;
+                    graph = 100;
+                end
             end
 
             y+=2;
@@ -230,9 +434,30 @@ loop
                 end
             end
 
-            if(collision(type trampoline))
-                state = m_bounce;
+            tramp_id = collision(type trampoline);
+            if(tramp_id)
+                if(!intro)
+                    tramp_id.hit = 1;
+                end
 
+                bounced_id = tramp_id;
+                if(tramp_id.health > 0)
+                    state = m_bounce;
+                    for(i=0;i<2;i++)
+                        frame;
+                        y+=2;
+                    end
+
+                    for(i=0;i<2;i++)
+                        frame;
+                        y-=2;
+                    end
+
+                end
+            end
+
+            if(y>246)
+                state = m_knocked;
             end
 
 
@@ -242,7 +467,7 @@ loop
             textid = write(0,0,20,3,"State: Walking");
 
             x+=dir;
-            if(!key(_left) and !key(_right))
+            if(!key(_left) and !key(_right) and !intro )
                 state = m_none;
             end
 
@@ -264,7 +489,11 @@ loop
             textid = write(0,0,20,3,"State: Hopping");
 
             // more happens here
-            graph = 100;
+            if(intro)
+                graph = 107;
+            else
+                graph = 105;
+            end
 
             y-=1;
             frame;
@@ -278,30 +507,54 @@ loop
 
             y-=1;
             frame;
+            //debug;
+            if((x<16 or x > 439) and !intro ) // left and right playfield boundaries
+                if(dir == 1)
+                    dir = -1;
+                else
+                    dir = 1;
+                end
+            else
 
-            x+=dir;
-            y-=1;
-            frame;
 
-            x+=dir;
-            y-=1;
-            frame;
+                x+=dir;
+                y-=1;
+                frame;
 
-            x+=dir;
-            frame;
+                x+=dir;
+                y-=1;
+                frame;
 
-            x+=dir;
-            y-=1;
-            frame;
+            // at this point we could be hitting a wall or a closed door
 
-            x+=dir;
-            frame;
+            // check wall
 
-            x+=dir;
-            frame;
 
-            x+=dir;
-            frame;
+
+                x+=dir;
+                frame;
+
+
+                x+=dir;
+                y-=1;
+                frame;
+
+
+
+                x+=dir;
+                frame;
+
+
+
+                x+=dir;
+                frame;
+
+
+                x+=dir;
+                frame;
+
+            end
+
 
             x+=dir;
             frame;
@@ -324,16 +577,19 @@ loop
             y+=1;
             frame;
 
-            x+=dir;
+            //x+=dir;
             y+=1;
             frame;
 
             y+=1;
-            frame;
+
 
             state = m_falling;
             graph = 102;
             animcount =0;
+
+
+
         end
 
     end
